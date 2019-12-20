@@ -1,5 +1,6 @@
 # 入門Unixシェルプログラミング
 
+# 一章
 ## コメント
 `#`から行末までがコメントになる
 
@@ -246,3 +247,78 @@ if test -f file; then
 else
   echo "the file does not.exsit"
 ```
+
+### for文
+
+```bash
+for variable in word-list
+do
+  command
+  ・・・
+done
+```
+
+```bash
+for i in a b c d
+do
+  echo $i
+done
+```
+
+### while
+
+```bash
+while command-list
+do
+  command
+  ・・・・
+done
+```
+
+```bash
+a=1
+while test $a -lt 3
+do
+  echo $a
+  a=`expr $a + 1`
+done
+```
+
+### case文
+
+```bash
+case string in
+  pattern1) command-list ;;
+  pattern2) command-list ;;
+  pattern3) command-list ;;
+  ・・・・
+esac
+```
+
+```bash
+STRING=abc
+case "$STRING" in
+  ABC) echo "STRING is ABC" ;;
+  abc) echo "STRING is abc" ;;
+  xyz) echo "STRING is xyz" ;;
+esac
+```
+
+### testコマンド
+
+testコマンドは、ある条件を判定し、その条件が正しい場合には真(0)を返し、誤っている場合には偽(0以外)を返す。ifやwhileのような条件判定文で使いやすコマンド
+
+```bash
+if test -r file
+then
+  echo "the file exists and i can read it"
+fi
+
+# もっと読みやすいように鉤括弧で置き換えることができる
+if [ -r file ]
+then
+  echo "the file exists and i can read it"
+fi
+```
+
+# ２章
