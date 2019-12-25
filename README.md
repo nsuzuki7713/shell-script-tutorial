@@ -695,7 +695,7 @@ exitコマンドはシェルを終了するときに使用する。
 ```bash
 #!/bin/sh
 echo -n "enter yes or no -->"
-reead ANSWER
+read ANSWER
 ```
 
 ### readonlyコマンド
@@ -703,3 +703,154 @@ reead ANSWER
 `readonly name...`
 
 このコマンドはnameで指定された変数をリードオンリーにする。
+
+### returnコマンド
+
+`return exitstatus`
+
+シェルの関数から抜けるコマンド。exitstatusに指定した番号がその関数の終了コードとなる。番号が指定されなかった場合には、関数が終了する直前のコマンドの実行終了コードが返る。
+
+### setコマンド
+
+setコマンドは、シェルのオプションをオンにしたりオフにしたりする。
+
+```bash
+$ sh #シェルを起動
+$ echo abc
+abc
+$ set -v #冗長モード
+$ echo abc #コマンドを打つと、入力コマンドを表示後、結果がでる
+echo abc
+abc
+$ set +v #オプションをもとに戻す
+$ echo abc #入力コマンドが標示されない
+abc
+```
+
+代表的なオプション
+
+* -i 対話的に動作するようにする
+* -n コマンドを読み取るが、実行はしない
+* -s コマンドを標準入力から読む
+* -v 入力されたコマンドを標準エラーに出力する
+* -x コマンドの実行前に、実行するコマンドを標準エラーに出力する
+
+注意点は-をともうなうとそのフラグがオンになり、+が伴うとオフになるということ
+
+### shiftコマンド
+
+このコマンドは、位置パラメタの値を飛騨アリにずらす。
+
+`shift number`
+
+引数としてnumberの所に数値(9まで)を書けば、その数値の文だけずらす。
+
+```bash
+#!/bin/sh
+echo $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+shift
+echo $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+shift 3
+echo $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+```
+
+というスクリプトあった場合、下記のような挙動となる
+
+```bash
+$ ooo aa bb cc dd ee ff gg hh ii
+./ooo aa bb cc dd ee ff gg hh ii
+./ooo bb cc dd ee ff gg hh ii
+./ooo ee ff gg hh ii
+```
+
+### testコマンド
+
+testコマンドは、ある条件を判定し、正しいか正しくないかによって真(成功、0の値)か(失敗、0以外)を返す。ifやwhileの条件判定に使うのがもっとも多い利用。
+
+書き方は次の二通りある
+
+* test expression
+* [ expression ]
+
+下記、判定オプションの一礼
+
+ファイルに関するテスト
+```
+-r file #fileが「読み取り可」なら真
+-w file #fileが「書き込み可」なら真
+-x file #fileが「実行可」なら真
+-f file #fileが「普通のファイル」なら真
+-d file #fileが「ディレクトリ」なら真
+-s file #fileが「0より大きいサイズ」なら真
+```
+
+文字列に関するテスト
+```
+-z string #stringの「長さが0」なら真
+-n string #stringの「長さが0より大」なら真
+string    #stringが「ヌルでなければ」真
+str1 = str2 #str1とstr２が「同じ」なら真
+str1 != str2 #str1とstr2が「同じでない」なら真
+```
+
+数値に関するテスト
+```
+int1 -eq int2 #int1とint2が「等しい」なら真
+int1 -ne int2 #int1とint2が「等しくない」なら真
+int1 -lt int2 #int1がint2「より小さい(less than)」なら真
+int1 -le int2 #int1がint2「以下(less than or equal)」なら真
+int1 -gt int2 #int1がint2「より大きい(greather than)」なら真
+int1 -ge int2 #int1がint2「以上(greather than or equaql)」なら真
+```
+
+その他
+```
+! #NOTの意味
+-a # AND
+-o # OR
+( expr ) #グルーピング
+```
+
+### trapコマンド
+
+`trap action signal...`
+
+このシェルスクリプトが、signalに指定したシグナルを受け取ったときにどういう処理をするかをactionの所に指定する。
+
+### typeコマンド
+
+`type name`
+
+nameには普通コマンドの名前を指定する。typeコマンドは、nameで指定したコマンドが、このシェルでどういう取り扱いなのかを出力する。
+
+```bash
+$ type echo date
+echo is a shell builtin
+date is /bin/date
+```
+
+### umaskコマンド
+
+`umask mask`
+
+ファイルを生成するときにどういうモードで作るかを決定する。
+
+```bash
+OLDMASK=`umask` #現在の値を保存
+umask 002 #変更していろいろ操作
+・・・・
+・・・・
+umask $OLDMASK #もとに戻す
+```
+
+### unsetコマンドは
+
+unsetこまんどは、以下のようにして指定した変数や関数を消去する
+
+`unset name`
+
+### waitコマンド
+
+`wait jobnumber`
+
+引数に指定するのは動作しているプログラムのプロセスIDです。このコマンドは、そのプログラムが終了するまでずっとまちます。
