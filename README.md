@@ -1275,3 +1275,208 @@ trap signal_number # シグナルをリセットする
 ```
 
 trapコマンドはシェルスクリプトのどこに書いても構わないが、通常はできるだけ初めの方に書く。シェルスクリプトは上から下に順に実行されていくので、trapコマンドを書く以前になにかのシグナルを受け取ってしまうと、そこで中断されてしまうから。
+
+# 第6章: コマンド行の解析、処理
+
+## コマンド行の書き方
+
+`command [options] [parameters]`
+
+オプションは普通1文字で表記し、他の引数と区別するためハイフン(-)を前に置く。ハイフンとオプションの文字との間にはスペースは置かない。
+
+`command -a`
+
+# 第7章: フィルターの使用法
+
+## フィルターとは
+
+フィルタというのはコマンドの一種であり、標準入力からデータを受け取ってそれに変更を加えて標準出力に書き出すという働きをするもの。データの受け渡しには通常パイプライン(|)を利用する
+
+```bash
+# このように書けば、catコマンドで標準出力にファイルの内容を書き出してフィルタ役のコマンドに渡すことでfileのデータに手を加えることができる。
+cat file |
+    filter_1 |
+    filter_2 |
+    while read LINE
+    do
+      ・・・
+    done
+```
+
+## sedコマンド
+
+sedコマンドはフィルタを作るためにはとても有用なコマンド。標準入力からデータを受け取って編集後の結果を標準出力に書き出す。
+
+### sedコマンドの基本的な使い方
+
+`$ sed -e "s/01dText/NewText/" samplefile`
+
+samplefileの中身が下記に左側になっていたとき、結果が右側のようになる。
+
+```
+01dTextaaaa01dText → NewTextaaaa01dText
+mmmnnnn → mmmnnnn
+hasjs01dTexthajsh → hasjhNewTexthajsh
+```
+
+samplefileの中から、01dTextという文字列を探してそれをNewTextという文字列に置き換え、標準出力に書き出す。
+
+この結果をファイルに残したければ、リダイレクトさせる。
+
+`$ sed -e "s/01dText/NewText/" samplefile > result`
+
+また、次のように書いても結果は同じようになる
+
+`$ cat samplefile | sed -e "s/01dText/NewText/" > result`
+
+sedにつけた-eというオプションは、その後の文字列が編集用のコマンドだということを表している。
+
+よって、`s/01dText/NewText/`を編集しなさいという意味となる。
+
+sはsubstitute(置換)の意味。`s/01dText/NewText/`という編集コマンドは、/で囲んだ2つの文字列の左側の文字列を右側の文字列で置き換えるという意味。
+
+１行の中で見つけた文字列をすべて置き換える場合には、globalのgを次のように指定する。
+
+`s/01dText/NewText/g`
+
+変換処理をさせるコマンドの中には変数を使うことも可能
+
+```bash
+$ OLDTEXT=OldText
+$ NEWTEXT=NewText
+$ sed -e "s/$OLDTEXT/$NEWTEXT/" samplefile
+```
+
+また、オプションとして-nを使う場合もかなりある。sedは処理した行も処理しなかった行もすべて標準出力に書き出すという動作である。
+
+-nをつけると、指示した行だけを標準出力にだすという動作に変わる。このオプションを使用する場合には、「出力しなさい」と意味でprintのpを必ず一緒に使用する必要がある。
+
+```bash
+# これは2行目を標準出力に書き出すだけ、内容の変更は何もしません
+$ sed -n '2p' < samplefile
+mmmnnnn
+
+# 先程の置換処理を組み合わせると置換処理を行った行だけを出力させることもできる
+$ sed -n -e "s/OldText/NewText/gp" samplefile
+NewTextjahjsaNewTextajs
+hasjnNewTexthajsh
+```
+
+### sedコマンドをパイプでつなぐこと
+
+次のように繋ぐことで、一度に複数の文字を置換できる
+
+`sed -e "s/Old_1/g" | sed -e "s/Old_2/g" | ・・・`
+
+```bash
+# sedで繋いだパターン
+cat file |
+    sed -e "s/OldText1/NewText1/g" |
+    sed -e "s/OldText2/NewText2/g" |
+    while read LINE
+    do
+      ・・・
+    done
+
+# sedは同時に複数の変換処理の指定ができるので、次のようにも書ける
+cat file |
+    sed -e "s/OldText1/NewText1/g" \
+        -e "s/OldText2/NewText2/g" |
+    while read LINE
+    do
+      ・・・
+    done
+```
+
+### sedコマンドのデリミタを変更する
+
+区切り文字(デリミタ)として`/`を利用している。
+
+`s/OldText/NewText/g`
+
+では変換する文字に/という文字列が含まれている場合を考える。abc/efという文字列をABC-EFに変えたいという場合。
+
+```bash
+# /をエスケープする
+s/abc\/ef/ABC-EF/g
+
+# デリミタとして使用している/という文字は、単に慣習的に使われているだけなので、どんな文字をデリミタとして使用しても構わない
+# デリミタとして使用するという宣言も不要で、sの直後の文字がデリミタとして使用される
+s%abc/ef%ABC-EF%g
+s.abc/ef.ABC-EF.g
+sxabc/efxABC-EFxg
+```
+
+/の変わりには%や@という文字がよく使われる。
+
+## sedを使っての編集
+
+### 文字列の置換
+
+`sed -e "s/OldText/NewText/g"`
+
+最後のgがなければ、その行に出てくる最初の文字列だけを対象にする。
+
+### 文字列の削除
+
+`sed -e "s/TextToRemove//g"`
+
+これはTextToRemoveという文字列を、何もない文字列に変換させること。
+
+### 行頭の文字列を消す
+
+`sed -e "s/^TextToRemove//"`
+
+^は行の最初を表す。上記の例は行の最初に指定した文字列があった場合、何もないものに置換するため結果的に削除することになる。
+
+### 行末の文字列を消す
+
+`sed -e "s/TestToRemove\$//"`
+
+$は行末を意味する文字。$はシェルの特殊文字のなので、sedより先にシェルに解釈させてはいけないため、エスケープさせる。
+
+### 文字列を追加する
+
+`sed -e "s/abc/abcxxx"`
+
+文字列の置き換えと同じようなこと
+
+### 行の先頭に文字列を追加する
+
+`sed -e "s/^/TextToInsert/"`
+
+このようにすれば対象ファイルの全部の行頭にTextToInsertで指定した文字列を書き込まれる。
+
+### 行末の文字列を追加する
+
+`sed -e "s/\$/TextToAppend/"`
+
+### ドット(.)とアスタリスク(*)
+
+.には「任意の1文字」の意味がある。
+
+`sed -e "s/^...//"`
+
+このように指定すると、行頭から3文字すべてを消去することになる。
+
+*は「直前の文字が任意の個数連続した場合(0個も含む)」を表す。
+a*という指定は、a,aa,aaaaなど、aが任意の個数続く文字列を表す。
+
+.*は任意の文字列を表す。
+
+`sed -e "s/.*/abcd"`
+
+これは行の全部をabcdという文字列に置き換える。
+
+### 文字列の切り詰め、切り取り
+
+```bash
+# Patternという文字列を削除する
+sed -e "s/Pattern//"
+
+# Patternという文字列とそれに続く任意の文字列をいみするため、Patternという文字列以降を削除する
+sed -e "s/Pattern.*//"
+
+# Pattern1で始まって、Pattern2で終わる文字列を削除する
+sed -e "s/Pattern.*Pattern2//"
+```
