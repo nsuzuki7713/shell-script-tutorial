@@ -1480,3 +1480,361 @@ sed -e "s/Pattern.*//"
 # Pattern1で始まって、Pattern2で終わる文字列を削除する
 sed -e "s/Pattern.*Pattern2//"
 ```
+
+### 大文字小文字を入れ替える
+
+アルファベットの大文字を小文字に変換したり、小文字を大文字に変換するにはtrコマンドが便利。
+
+```bash
+# ファイルの中身を全部小文字にする
+$ cat file | tr '[A-Z]' '[a-z]' > lowerfile
+
+# 全部大文字にする場合
+$ cat file | tr '[a-z]' '[A-Z]' > upperfile
+```
+
+### タブをスペースに変換
+
+`sed -e 's/<tab>/<space>/g'`
+
+### 複数のスペースを1っ子のスペースに変換
+
+複数のスペースは、<space>*で表現できる
+
+`sed -e 's/<space><space>*/<space>/g'`
+
+注意するのは<space><space>*と2個のスペースを並べるところ。<space>* とすると、0個か1個以上のスペースという意味になり、全部の文字の前にスペースが挿入される。
+
+### ホワイトスペースを1個のスペースに変換
+
+ホワイトスペースというのはタブかスペースのこと。タブが入っているのか、スペースが入っているのかわからないときや、タブやスペースが混在している場合には1個のスペースに変えるには以下のようにする。
+
+`sed -e 's/[<space><tab>][<space><tab>]*/<space>/g'`
+
+鉤括弧はシェルの鉤括弧と同じ用法で、どちらかを表現する
+
+`[<space><tab>][<space><tab>]`
+
+は、以下の4パターンになる
+
+```
+<space><space>
+<space><tab>
+<tab><space>
+<space><tab>
+```
+
+### 行頭のホワイトスペースを削除
+
+`sed -e 's/^[<space><tab>]*//'`
+
+### 行末のホワイトスペースを削除
+
+`sed -e 's/[<space><tab>]*$//'`
+
+### 文字列指定による行の削除
+
+Textとう文字列を含んだ行を削除するには以下のように指定する。
+
+`sed -e "/Text/d"`
+
+変換するわけではないので、substituteのsは不要。最後にdeleteの意味のdを指定する。
+
+### 空白行の削除
+
+何も書かれていない行の削除するには次のようにする。
+
+`sed -e '/^$/d'`
+
+ただし、この場合スペースやタブだけの行は削除できない。スペースやタブだけの行も含めた空白行を削除したい場合は、以下のように書く
+
+`sed -e '/^[<space><tab>]*$/d'`
+
+### sedによる行の指定
+
+sedコマンドでは、そのファイルの中で処理させる行を指定することできる。
+
+```bash
+# fileの5行目から20行目を処理する。指定されていない行は何も処理しない
+sed -e "5,20s/OldText/NewText/g" file
+
+# 5行目から最終行まで処理をする
+sed -e "5,$s/OldText/NewText/g" file
+```
+
+### 行の削除
+
+```bash
+# ファイルの1行目を削除
+sed -e '1d' file
+
+# 最初の4行を削除
+sed -e '1,4d' file
+
+# 最終行を削除
+sed -e '$d' file
+```
+
+### 指定した行だけを表示する
+
+```bash
+# 1行目だけを表示する
+sed -n '1p' file
+
+# n行だけを標示させる
+sed -n 'np' file
+
+# n行目からm行目まで表示する
+sed -n 'n,mp' file
+
+# 最終行を表示する
+sed -n '$p' file
+```
+
+### コメント行の削除
+
+```bash
+# コメント行を削除
+# コメントが行頭にある場合のみ、削除できる。
+sed -e '/^#/d' file
+
+# 行の途中にコメントがある場合に、削除する
+# これでは行そのものは削除できない
+sed -e 's/#.*// file'
+```
+
+```bash
+while read LINE
+do
+  case $LINE in
+    \#* ) continue
+          ;;
+      * ) echo "$LINE"
+          ;;
+  esac
+done
+```
+
+### ファイルを後ろから表示する
+
+古く書き込まれたものより先に新しく書き込まれたものから順にファイルを見たい。
+
+`grep -n '.*' | sort -n -r | sed 's/^[0-9]*://'`
+
+grepコマンドに-nオプションを用いて各業に行番号を地ける。sortで逆順に並べて、sedで数字箇所を削除する。
+
+# 第8章:シェルのいろいろな機能
+
+## 数値の計算
+
+シェルは数値であってもそれは文字として扱われている。計算するためには、exprコマンドを経由して行う
+
+### 整数の計算
+
+```bash
+expr int1 + int2 # int1+int2を加える
+expr int1 - int2 # int1からint2を引く
+expr int1 * int2 # int1にint2を掛ける
+expr int1 / int2 # int1をint2で割る
+expr int1 % int2 # int1をint2で割った余り
+```
+
+```bash
+$ expr 3 + 5
+8
+$ expr 3 - 5
+-2
+$ expr -4  + -2
+-6
+$ expr 3 '*' 5
+15
+$ expr 30 \* -2
+-60
+$ expr 10 / 2
+5
+$ expr 10 / 3
+3
+$ expr 10 / -4
+-2
+$ expr 30 % 2
+0
+$ expr 15 % 6
+3
+$ expr -20 % 3
+-2
+```
+
+変数を使って計算させる場合は次のようになる
+
+```bash
+VALUE=5
+VALUE='expr $VALUE + 1'
+```
+
+### 数値の比較
+
+数値の大小を比較するには、testコマンドを利用する。
+
+```bash
+test int1 -eq int2 # int1とint2が等しいとき真
+test int1 -ne int2 # int1とint2が等しくないとき真
+test int1 -lt int2 # int1がint2より小さいとき真
+test int1 -le int2 # int1がint2より小さいか等しいとき真
+test int1 -gt int2 # int1がint2より大きいとき真
+test int1 -ge int2 # int1がint2より大きいか等しいとき真
+```
+
+### 浮動小数点を含む計算
+
+浮動小数点を含む計算を行う場合にはbcコマンドが利用できる。
+
+scaleという値をセットすることで小数点第何位まで出力するかを指定する。
+
+```bash
+echo "scale=n; num1 + num2" | bc # num1にnum2を加える
+echo "scale=n; num1 - num2" | bc # num1からnum2を引く
+echo "scale=n; num1 * num2" | bc # num1にnum2を掛ける
+echo "scale=n; num1 / num2" | bc # num1をnum2で割る
+```
+
+```bash
+$ echo "scale=3; 10 / 3" | bc
+3.333
+
+$ echo "scale=4; 10 / 3" | bc
+3.3333
+
+$ echo "scale=3; 3.33 * 3.1234" | bc
+10.4009
+
+$ echo "scale=7; 3.33 * 3.1234" | bc
+10.400922
+
+$ echo "3.5678 * 3" | bc
+10.7034
+
+$ echo "scale=2; 3.5678 * 3" | bc
+10.7034
+```
+
+### 数値化どうかの判定
+
+NUMBERに代入されている文字列に強引に1を加えている。もしNUMBERが数値だけからなる文字列であれば、実行終了ステータスは0か1になる。(普通は0を返しますが、計算結果が0の場合には1を返す)。NUMBERに数値以外の文字が入っていればexprがエラーを出し、終了ステータスは2以上になる。
+
+```bash
+expr "$NUMBER +  1 > /dev/null 2>&1"
+if [ $? -lt 2]; then
+  echo "Numeric"
+else
+  echo "Not Numeric"
+fi
+```
+
+## 文字列の操作
+
+### フィルタを使った文字列処理
+
+```bash
+$ STRING="abc def ghi"
+$ STRING=`echo "$STRING" | sed -e "s/def/xyz/g"`
+$ echo "$STRING"
+abc xyz ghi
+```
+
+### 文字列の連結
+
+```bash
+# 変数を並べて書けばよい
+$ STRING1=abc
+$ STRING2=xyz
+$ VAR=$STRING1$STRING2
+$ echo $VAR
+abcxyz
+
+# 変数に直接文字列を繋ぐ場合は中括弧で括る
+$ STRING=abc
+$ VAR=${STRING}xyz
+$ echo $VAR
+abcxyc
+```
+
+### 文字列の長さ
+
+下記コマンドを使うと、文字列の長さを得られる
+
+`expr "string" : '.*'`
+
+exprtは引数に:(コロン)があると、その右側と左側の文字列を比較して「戦闘から何文字まで等しいか」という値を返す。右側の`.*`はどんな文字列でも表現できるので、左側の文字列が何であれ同じものを表す表現となる。
+
+```bash
+$ STRING=abcdefghijklmnopqrstuvwxyz
+$ NUMCHARS=`expr "$STRING" : '.*'`
+$ echo $NUMCHARS
+26
+```
+
+STRINGに:や*が1文字だけ代入されている場合、exprコマンドはエラーとなるため、case文などで対応すればよい
+
+```bash
+case "STRING" in
+  ? ) echo 1 ;;
+  * ) expr "$STRING" : '.*' ;;
+esac
+```
+
+### 文字列の中の文字列
+
+grepコマンドはある文字列がその名k何含まれているどうかを判定し、含まれていればその行を書き出す、という処理をする。実行終了ステータスとして、文字列が含まれていたら真を、そうでなかったら偽を返す。
+
+```bash
+# xyzが含まれているかどうか
+echo abcdefgxyzaaa | grep xyz > /dev/null
+if [ $? -eq 0]; then
+  echo "include it."
+else
+  echo "Not include it."
+fi
+```
+
+### 文字列の中の一部分の切り出し
+
+コマンドの記法は下記となる。
+
+`expr "string" : "regrexp\(regrexp\)regrexp"`
+
+コロンの左側に、元になる文字列を書く。コロンの右側には正規表現を使って取り出すべき文字列を書く。\\(と\\)で囲まれた部分が取り出すべき文字列となる。
+
+```bash
+$ expr "abcdefghijklmn" : "a.*\(e..h\)i.*"
+efgh
+```
+
+正規表現の表し方
+
+```bash
+.* 何もないものを含め、どんな文字列も表す
+.  何か1文字(ヌル文字にも該当する)
+*  直前の文字が0個以上並んだ文字列
+\. ドット文字そのもの
+\* アスタリスクそのもの
+```
+
+```
+abc.*   abcで始まる文字列ならなんでも
+.*abc   abcで終わる文字列ならなんでも
+ab*c    abやabbcというように、aとcの間にbが0個以上ある文字れる
+ab.*c   abで始まってcで終わる文字れる(abcも該当)
+a....b  aで始まってbで終わる6文字
+..*\.c  .cで終わる文字列(.cでなく、.cの前に少なくとも1文字ある)
+```
+
+```bash
+expr "string" : "pattern\(.*\)"  patternという文字列より後
+expr "string" : "\(.*\)pattern"  patternという文字列より前
+expr "string" : "\(...\).*"      初めの三文字
+expr "string" : ".*\(...\)"      後ろの三文字
+expr "string" : "...\(.*\)"      初めの三文字を取り去った残り
+expr "string" : "\(.*\)..."      後ろの三文字を取り去った残り
+expr "string" : "\(.*\)"         その文字列全部をそのまま
+```
+
