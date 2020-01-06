@@ -1838,3 +1838,120 @@ expr "string" : "\(.*\)..."      後ろの三文字を取り去った残り
 expr "string" : "\(.*\)"         その文字列全部をそのまま
 ```
 
+# 第9章:シェル関数の例
+
+# 第10章:シェルスクリプトの例
+
+# 第11章:デバッグの手順、手法
+
+## デバッグオプション
+
+シェルスクリプトは普通下記のように実行する。
+
+`$ scriptfile param1 param2`
+
+これは次のようにして実行することも可能。このshコマンドには、オプションを付けて実行することができる。
+
+`$ sh scriptfile param1 param2`
+
+下記のようなシェルスクリプトがあると想定
+
+```bash abc.sh
+#!/bin/sh
+ABC=0
+for i in 1 2 3 4
+do
+  ABC=`expr $ABC + $i`
+done
+  echo $ABC
+```
+
+```bash
+$ sh ./abc.sh # 普通に実行する
+10
+
+$ sh -v ./abc.sh # 何を実行するか標示されて、最後の結果が出力
+#!/bin/sh
+ABC=0
+for i in 1 2 3 4
+do
+  ABC=`expr $ABC + $i`
+done
+expr $ABC + $i
+expr $ABC + $i
+expr $ABC + $i
+expr $ABC + $i
+echo $ABC
+10
+
+$ sh -x ./abc.sh # 実行している途中結果が標示される
++ ABC=0
++ for i in 1 2 3 4
+++ expr 0 + 1
++ ABC=1
++ for i in 1 2 3 4
+++ expr 1 + 2
++ ABC=3
++ for i in 1 2 3 4
+++ expr 3 + 3
++ ABC=6
++ for i in 1 2 3 4
+++ expr 6 + 4
++ ABC=10
++ echo 10
+10
+
+$ sh -vx ./abc.sh
+#!/bin/sh
+ABC=0
++ ABC=0
+for i in 1 2 3 4
+do
+  ABC=`expr $ABC + $i`
+done
++ for i in 1 2 3 4
+expr $ABC + $i
+++ expr 0 + 1
++ ABC=1
++ for i in 1 2 3 4
+expr $ABC + $i
+++ expr 1 + 2
++ ABC=3
++ for i in 1 2 3 4
+expr $ABC + $i
+++ expr 3 + 3
++ ABC=6
++ for i in 1 2 3 4
+expr $ABC + $i
+++ expr 6 + 4
++ ABC=10
+  echo $ABC
++ echo 10
+10
+```
+
+-vオプションを付けると、そのシェルスクリプトがこれからしようとしていることを標示する。
+
+-xオプションは、シェルスクリプトがその中で実際に行ったことを(変数なら値を置き換えた状態で)標示していく。
+
+これらのオプションはシェルスクリプト中のsetコマンドで組み込むことが可能。例えば、詳細な情報を取りたい所だけ抜き出す場合は下記のようにすれば良い。
+
+```bash
+$!/bin/sh
+・・・・・
+set -xv
+・・・・・
+・・・・・
+set +xv
+・・・・・
+```
+
+デバックでよく使用するオプション
+```bash
+e : スクリプト内部のコマンドの終了で追うコードが0以外のとき、終了する
+i : 対話的モードで動作する
+n : スクリプトを読み込むが実行はしない(構文チェックを行うだけ)
+u : 未設定の変数を利用したとき、エラーにする
+v : 何をしようとしているかを標示する
+x : 実行するコマンドの内容を表示する
+```
